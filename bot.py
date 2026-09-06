@@ -10,9 +10,15 @@ from telegram.ext import (
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 
 PAID_LINK = "https://t.me/+CzC7KBjLbDhkNDlk"
-
-# Change this later to your actual support username.
 SUPPORT_USERNAME = "2WAYARB_SUPPORT"
+
+PORT = int(os.environ.get("PORT", "10000"))
+HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+
+if not HOSTNAME:
+    raise RuntimeError("RENDER_EXTERNAL_HOSTNAME is not available")
+
+WEBHOOK_URL = f"https://{HOSTNAME}/telegram"
 
 
 def main_menu():
@@ -31,16 +37,12 @@ def main_menu():
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = (
+    await update.message.reply_text(
         "Welcome to 2WAYARB — Relative Value Signals.\n\n"
         "Real-time spread-arbitrage signals focused primarily "
         "on major indices, with selected FX opportunities.\n\n"
         "No courses. No hype. Just the trades.\n\n"
-        "Choose an option below:"
-    )
-
-    await update.message.reply_text(
-        text,
+        "Choose an option below:",
         reply_markup=main_menu()
     )
 
@@ -105,7 +107,6 @@ async def button_handler(
     await query.answer()
 
     if query.data == "home":
-
         await query.edit_message_text(
             "Welcome to 2WAYARB — Relative Value Signals.\n\n"
             "No courses. No hype. Just the trades.\n\n"
@@ -114,7 +115,6 @@ async def button_handler(
         )
 
     elif query.data == "what":
-
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("⭐ Subscribe", url=PAID_LINK)],
             [InlineKeyboardButton("⬅️ Back", callback_data="home")]
@@ -123,3 +123,97 @@ async def button_handler(
         await query.edit_message_text(
             "📊 WHAT YOU GET\n\n"
             "• Real-time spread-arbitrage signals\n"
+            "• Major indices as the primary focus\n"
+            "• Selected FX opportunities\n"
+            "• Entry and trade direction information\n"
+            "• Signals delivered directly through Telegram\n\n"
+            "No courses. No hype. Just signals.",
+            reply_markup=keyboard
+        )
+
+    elif query.data == "plans":
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("⭐ Subscribe Now", url=PAID_LINK)],
+            [InlineKeyboardButton("⬅️ Back", callback_data="home")]
+        ])
+
+        await query.edit_message_text(
+            "💳 SUBSCRIPTION\n\n"
+            "2WAYARB Monthly\n\n"
+            "$40/month\n\n"
+            "Payment and recurring access are handled "
+            "through Telegram.",
+            reply_markup=keyboard
+        )
+
+    elif query.data == "about":
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("⬅️ Back", callback_data="home")]
+        ])
+
+        await query.edit_message_text(
+            "ℹ️ ABOUT 2WAYARB\n\n"
+            "2WAYARB focuses on relative-value and "
+            "spread-arbitrage opportunities, primarily "
+            "across major indices and occasionally FX pairs.\n\n"
+            "No training. No hype. Just signals.",
+            reply_markup=keyboard
+        )
+
+    elif query.data == "faq":
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("⭐ Subscribe", url=PAID_LINK)],
+            [InlineKeyboardButton("⬅️ Back", callback_data="home")]
+        ])
+
+        await query.edit_message_text(
+            "❓ FAQ\n\n"
+            "Q: How much is access?\n"
+            "A: $40/month.\n\n"
+            "Q: How do I subscribe?\n"
+            "A: Tap Subscribe and complete the Telegram payment.\n\n"
+            "Q: How do I receive signals?\n"
+            "A: Signals are delivered inside the private "
+            "2WAYARB channel.\n\n"
+            "Q: Are profits guaranteed?\n"
+            "A: No. Trading involves risk and profits are "
+            "not guaranteed.",
+            reply_markup=keyboard
+        )
+
+    elif query.data == "support":
+        keyboard = InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton(
+                    "🆘 Contact Support",
+                    url=f"https://t.me/{SUPPORT_USERNAME}"
+                )
+            ],
+            [InlineKeyboardButton("⬅️ Back", callback_data="home")]
+        ])
+
+        await query.edit_message_text(
+            "🆘 SUPPORT\n\n"
+            "For subscription or channel-access issues, "
+            "contact support.",
+            reply_markup=keyboard
+        )
+
+
+app = Application.builder().token(BOT_TOKEN).build()
+
+app.add_handler(CommandHandler("start", start))
+app.add_handler(CommandHandler("subscribe", subscribe))
+app.add_handler(CommandHandler("plans", plans))
+app.add_handler(CommandHandler("about", about))
+app.add_handler(CommandHandler("faq", faq))
+app.add_handler(CommandHandler("support", support))
+app.add_handler(CallbackQueryHandler(button_handler))
+
+app.run_webhook(
+    listen="0.0.0.0",
+    port=PORT,
+    url_path="telegram",
+    webhook_url=WEBHOOK_URL,
+    drop_pending_updates=True,
+                   )
